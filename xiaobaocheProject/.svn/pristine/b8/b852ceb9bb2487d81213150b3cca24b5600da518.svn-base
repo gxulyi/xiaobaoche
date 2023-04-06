@@ -1,0 +1,19 @@
+import org.nutz.dao.Cnd;
+import org.nutz.dao.Dao;
+
+import com.dworker.thrift.IQuickThrift;
+import com.dworker.thrift.service.IResultInfo;
+import com.xwqp88.dao.IDaos;
+import com.dworker.xwwechat.datas.NewsDataSource;
+
+class data_attach extends NewsDataSource {
+	public <T> T get(Object params) {
+		try {
+			IResultInfo result = IQuickThrift.NEW().ask("data.shop.attach", params);
+			return result.success? result.resultInfo: [rows:[], total: 0];
+		} catch (Exception e) {
+			e.printStackTrace()
+		}
+		return [rows:[], total: 0];
+	}
+}

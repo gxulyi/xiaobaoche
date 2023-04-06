@@ -1,0 +1,44 @@
+import org.nutz.dao.Cnd;
+import org.nutz.dao.Dao;
+
+import com.xwqp88.dao.IDaos;
+import com.dworker.xwwechat.datas.NewsDataSource;
+
+class data_news_list_detail extends NewsDataSource {
+	public <T> T get(Object params) {
+		def area = [];
+		Dao dao = IDaos.getDao("dataSource");
+		Cnd cnd = Cnd.NEW();
+		int pn = 1, ps = 20;
+		String orb = "in_date", orbAsc = "desc";
+		params.each {
+			if (it.key != "name") {
+				if (it.key == "page" || it.key == "pageNo") {
+					pn = Integer.parseInt(String.valueOf(it.value));
+				} else if(it.key == "rows" || it.key == "pageSize"){
+					ps = Integer.parseInt(String.valueOf(it.value));
+				} else if(it.key == "title"){
+					cnd.and("title", "like", "%" + it.value + "%");
+				} else if(it.key == "content"){
+					cnd.and("content", "like", "%" + it.value + "%");
+				}else if(it.key == "type"){
+					cnd.and("type", "like", "%" + it.value + "%");
+				}else if(it.key == "in_date"){
+					cnd.and("in_date", "like", "%" + it.value + "%");
+				}else{
+					cnd.and(it.key, "=", it.value);
+				}
+			}
+		}
+		cnd.limit(pn, ps).orderBy(orb, orbAsc);
+		int total = 0;
+		try {
+			area = dao.query("ti_wechat", cnd);
+			total = dao.count("ti_wechat", cnd);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return ["rows": area, "total": total];
+	}
+}

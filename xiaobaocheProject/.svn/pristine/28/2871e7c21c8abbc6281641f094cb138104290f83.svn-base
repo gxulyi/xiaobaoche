@@ -1,0 +1,28 @@
+import org.nutz.lang.util.Context
+import org.nutz.lang.util.SimpleContext
+
+import com.dworker.web.services.BaseService
+import com.dworker.xwwechat.IService
+import com.dworker.xwwechat.service.IAddNewsService
+import com.xwqp88.mvc.IMvcs
+
+class service_add_news extends BaseService {
+	def id, msg;
+	@Override
+	protected void init() {
+		// TODO Auto-generated method stub
+		super.init();
+		def params = IMvcs.reqMap();
+		println params;
+		id = params.ids;
+		IService service = new IAddNewsService();
+		Context ctx = new SimpleContext();
+		ctx.putAll(params);
+		int rec = service.service(ctx);
+		if (rec == -1) {
+			msg = "增加失败！";
+		}	
+		data = ["id": id, "errorMsg": msg];
+		orginalView = json();
+	}
+}

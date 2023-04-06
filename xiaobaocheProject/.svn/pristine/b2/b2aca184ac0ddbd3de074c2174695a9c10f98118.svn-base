@@ -1,0 +1,93 @@
+import java.nio.charset.Charset;
+import java.util.List;
+
+import org.apache.commons.fileupload.FileItem;
+import org.nutz.img.Images;
+import org.nutz.lang.Files;
+import org.nutz.lang.Strings;
+import org.nutz.mvc.Mvcs;
+
+import com.dworker.datas.IDatas;
+import com.dworker.fs.IUploads;
+import com.dworker.fs.IUploads.UploadRunner;
+import com.dworker.fs.ftp.IFtp;
+import com.dworker.lang.ILogs;
+import com.dworker.xwwechat.chain.NewsTransChain;
+
+class chain_upload_image extends NewsTransChain implements UploadRunner{
+	def ftpRoot = "";
+	@Override
+	protected void prepare() {
+		// TODO Auto-generated method stub
+		super.prepare();
+		IUploads.it().parse().on(this)
+	}
+	def imageRecords = null;
+	def imagePath = null;
+	public void run(IUploads upload, List<FileItem> fields,
+			List<FileItem> files){
+		if (files == null || files.isEmpty()) {
+			return;
+		}
+		FileItem fileItem = files[0];
+		println fileItem;
+		def attachParams = new HashMap<String, Object>();
+		String module = "default";
+		String type = "0";
+		Map<String, Object> params = new HashMap<String, Object>();
+		for (FileItem f: fields) {
+			if (f.getFieldName() == "file_type" || f.getFieldName() == "attach_root_id") {
+				attachParams.put(f.getFieldName(), f.getString());
+			} else if(f.getFieldName() == "attach_module"){
+				module = f.getString();
+			} else {
+				params.put(f.getFieldName(), f.getString());
+			}
+		}
+		type = Strings.sBlank(attachParams.file_type, "0");
+		module = Strings.sBlank(module, "default");
+		IDatas datas = IDatas.NEW("data_attach").cache(false);
+		imageRecords = datas.makeData(attachParams).rows;
+		if (imageRecords == null || imageRecords.size() == 0) {
+			imageRecords = attachParams.clone();
+			imagePath = "/data/upload/images/" + module + "/" + type + "/" + imageRecords.attach_root_id + ".png";
+			imageRecords.file_type = type;
+			imageRecords.file_path = imagePath;
+		} else {
+			imageRecords = imageRecords[0];
+			imagePath = imageRecords.file_path;
+		}
+		if(fileItem.getSize() > 0){
+			File file = Files.createFileIfNoExists(Mvcs.getNutConfig().getAppRoot() + imagePath);
+			fileItem.write(file);
+
+			/*try {
+			 IFtp iFtp = getFtp();
+			 iFtp.copyTo("/Program Files/Apache Software Foundation/Tomcat 8.0/webapps/XwShop/data/upload/images/" + module + "/" + type + "/", file, false);
+			 println "提交FTP成功!";
+			 } catch (Exception e) {
+			 e.printStackTrace()
+			 }*/
+			context.set("attach_params", imageRecords);
+			nextChain("chain_update_attach");
+		}
+		context.set("form_params", params);
+	}
+
+//	private void checkFileLength(){
+//	}
+
+//	private IFtp getFtp(){
+//		IFtp ftp = (IFtp)Mvcs.getServletContext().getAttribute("__dworker_ftp_util");
+//		Date time = (Date)Mvcs.getServletContext().getAttribute("__dworker_ftp_util_time");
+//		if (ftp == null || (System.currentTimeMillis() - time.getTime()) / 1000 > 7200) {
+//			println "FTP工具未初始化或者已失效！";
+//			ftp = IFtp.it();
+//			ftp.getConfig().setHost("123.249.27.227").setMasterName("lilong").setMasterPwd("8412958li");
+//			println "构建FTP工具成功！";
+//			Mvcs.getServletContext().setAttribute("__dworker_ftp_util", ftp);
+//			Mvcs.getServletContext().setAttribute("__dworker_ftp_util_time", new Date());
+//		}
+//		return ftp;
+//	}
+}
